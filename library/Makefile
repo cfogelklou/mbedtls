@@ -49,9 +49,9 @@ OBJS_CRYPTO=	aes.o		aesni.o		arc4.o		\
 		asn1parse.o	asn1write.o	base64.o	\
 		bignum.o	blowfish.o	camellia.o	\
 		ccm.o		cipher.o	cipher_wrap.o	\
-		ctr_drbg.o	des.o		dhm.o		\
-		ecdh.o		ecdsa.o		ecjpake.o	\
-		ecp.o						\
+		cmac.o		ctr_drbg.o	des.o		\
+		dhm.o		ecdh.o		ecdsa.o		\
+		ecjpake.o	ecp.o				\
 		ecp_curves.o	entropy.o	entropy_poll.o	\
 		error.o		gcm.o		havege.o	\
 		hmac_drbg.o	md.o		md2.o		\
@@ -71,9 +71,10 @@ OBJS_X509=	certs.o		pkcs11.o	x509.o		\
 		x509_create.o	x509_crl.o	x509_crt.o	\
 		x509_csr.o	x509write_crt.o	x509write_csr.o
 
-OBJS_TLS=	debug.o		net.o		ssl_cache.o	\
-		ssl_ciphersuites.o		ssl_cli.o	\
-		ssl_cookie.o	ssl_srv.o	ssl_ticket.o	\
+OBJS_TLS=	debug.o		net_sockets.o		\
+		ssl_cache.o	ssl_ciphersuites.o	\
+		ssl_cli.o	ssl_cookie.o		\
+		ssl_srv.o	ssl_ticket.o		\
 		ssl_tls.o
 
 OBJS_ED25519=	ed25519/fe.o	ed25519/ge.o	ed25519/sc.o	\
@@ -98,9 +99,9 @@ shared: libmbedcrypto.$(DLEXT) libmbedx509.$(DLEXT) libmbedtls.$(DLEXT) libed255
 # tls
 libmbedtls.a: $(OBJS_TLS)
 	echo "  AR    $@"
-	$(AR) rc $@ $(OBJS_TLS)
+	$(AR) -rc $@ $(OBJS_TLS)
 	echo "  RL    $@"
-	$(AR) s $@
+	$(AR) -s $@
 
 libmbedtls.$(SOEXT_TLS): $(OBJS_TLS) libmbedx509.so
 	echo "  LD    $@"
@@ -121,9 +122,9 @@ libmbedtls.dll: $(OBJS_TLS) libmbedx509.dll
 # x509
 libmbedx509.a: $(OBJS_X509)
 	echo "  AR    $@"
-	$(AR) rc $@ $(OBJS_X509)
+	$(AR) -rc $@ $(OBJS_X509)
 	echo "  RL    $@"
-	$(AR) s $@
+	$(AR) -s $@
 
 libmbedx509.$(SOEXT_X509): $(OBJS_X509) libmbedcrypto.so
 	echo "  LD    $@"
@@ -144,9 +145,9 @@ libmbedx509.dll: $(OBJS_X509) libmbedcrypto.dll
 # crypto
 libmbedcrypto.a: $(OBJS_CRYPTO)
 	echo "  AR    $@"
-	$(AR) rc $@ $(OBJS_CRYPTO)
+	$(AR) -rc $@ $(OBJS_CRYPTO)
 	echo "  RL    $@"
-	$(AR) s $@
+	$(AR) -s $@
 
 libmbedcrypto.$(SOEXT_CRYPTO): $(OBJS_CRYPTO)
 	echo "  LD    $@"

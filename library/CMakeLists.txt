@@ -15,6 +15,7 @@ set(src_crypto
     ccm.c
     cipher.c
     cipher_wrap.c
+    cmac.c
     ctr_drbg.c
     des.c
     dhm.c
@@ -55,12 +56,6 @@ set(src_crypto
     version.c
     version_features.c
     xtea.c
-    kdf.c
-    kdf1.c
-    kdf2.c
-    kdf_wrap.c
-    ecies.c
-    ecies_envelope.c
 )
 
 set(src_x509
@@ -77,7 +72,7 @@ set(src_x509
 
 set(src_tls
     debug.c
-    net.c
+    net_sockets.c
     ssl_cache.c
     ssl_ciphersuites.c
     ssl_cli.c
@@ -85,17 +80,6 @@ set(src_tls
     ssl_srv.c
     ssl_ticket.c
     ssl_tls.c
-)
-
-set(src_ed25519
-    ed25519/fe.c
-    ed25519/ge.c
-    ed25519/sc.c
-    ed25519/sha512.c
-    ed25519/sign.c
-    ed25519/verify.c
-    ed25519/key_exchange.c
-    ed25519/curve25519.c
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -130,22 +114,16 @@ if(USE_STATIC_MBEDTLS_LIBRARY AND USE_SHARED_MBEDTLS_LIBRARY)
     set(mbedtls_static_target "mbedtls_static")
     set(mbedx509_static_target "mbedx509_static")
     set(mbedcrypto_static_target "mbedcrypto_static")
-    set(ed25519_static_target "ed25519_static")
 elseif(USE_STATIC_MBEDTLS_LIBRARY)
     set(mbedtls_static_target "mbedtls")
     set(mbedx509_static_target "mbedx509")
     set(mbedcrypto_static_target "mbedcrypto")
-    set(ed25519_static_target "ed25519")
 endif()
 
 if(USE_STATIC_MBEDTLS_LIBRARY)
-    add_library(${ed25519_static_target} STATIC ${src_ed25519})
-    set_target_properties(${ed25519_static_target} PROPERTIES OUTPUT_NAME ed25519)
-    target_link_libraries(${ed25519_static_target} ${libs})
-
     add_library(${mbedcrypto_static_target} STATIC ${src_crypto})
     set_target_properties(${mbedcrypto_static_target} PROPERTIES OUTPUT_NAME mbedcrypto)
-    target_link_libraries(${mbedcrypto_static_target} ${libs} ${ed25519_static_target})
+    target_link_libraries(${mbedcrypto_static_target} ${libs})
 
     add_library(${mbedx509_static_target} STATIC ${src_x509})
     set_target_properties(${mbedx509_static_target} PROPERTIES OUTPUT_NAME mbedx509)
@@ -156,34 +134,29 @@ if(USE_STATIC_MBEDTLS_LIBRARY)
     target_link_libraries(${mbedtls_static_target} ${libs} ${mbedx509_static_target})
 
     install(TARGETS ${mbedtls_static_target} ${mbedx509_static_target} ${mbedcrypto_static_target}
-                    ${ed25519_static_target}
             DESTINATION ${LIB_INSTALL_DIR}
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif(USE_STATIC_MBEDTLS_LIBRARY)
 
 if(USE_SHARED_MBEDTLS_LIBRARY)
-    add_library(ed25519 SHARED ${src_ed25519})
-    set_target_properties(ed25519 PROPERTIES VERSION 2.2.1 SOVERSION 0)
-    target_link_libraries(ed25519 ${libs})
-
     add_library(mbedcrypto SHARED ${src_crypto})
-    set_target_properties(mbedcrypto PROPERTIES VERSION 2.2.1 SOVERSION 0)
-    target_link_libraries(mbedcrypto ${libs} ed25519)
+    set_target_properties(mbedcrypto PROPERTIES VERSION 2.6.0 SOVERSION 0)
+    target_link_libraries(mbedcrypto ${libs})
 
     add_library(mbedx509 SHARED ${src_x509})
-    set_target_properties(mbedx509 PROPERTIES VERSION 2.2.1 SOVERSION 0)
+    set_target_properties(mbedx509 PROPERTIES VERSION 2.6.0 SOVERSION 0)
     target_link_libraries(mbedx509 ${libs} mbedcrypto)
 
     add_library(mbedtls SHARED ${src_tls})
-    set_target_properties(mbedtls PROPERTIES VERSION 2.2.1 SOVERSION 10)
+    set_target_properties(mbedtls PROPERTIES VERSION 2.6.0 SOVERSION 10)
     target_link_libraries(mbedtls ${libs} mbedx509)
 
-    install(TARGETS mbedtls mbedx509 mbedcrypto ed25519
+    install(TARGETS mbedtls mbedx509 mbedcrypto
             DESTINATION ${LIB_INSTALL_DIR}
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 endif(USE_SHARED_MBEDTLS_LIBRARY)
 
-add_custom_target(lib DEPENDS mbedcrypto mbedx509 mbedtls ed25519)
+add_custom_target(lib DEPENDS mbedcrypto mbedx509 mbedtls)
 if(USE_STATIC_MBEDTLS_LIBRARY AND USE_SHARED_MBEDTLS_LIBRARY)
-    add_dependencies(lib mbedcrypto_static mbedx509_static mbedtls_static ed25519_static)
+    add_dependencies(lib mbedcrypto_static mbedx509_static mbedtls_static)
 endif()
