@@ -1912,6 +1912,10 @@ int mbedtls_ecp_check_privkey( const mbedtls_ecp_group *grp, const mbedtls_mpi *
     return( MBEDTLS_ERR_ECP_BAD_INPUT_DATA );
 }
 
+#if defined(MBEDTLS_ECP_DP_X25519_ENABLED)
+#include "crypto_kx.h"
+#endif
+
 /*
  * Generate a keypair with configurable base point
  */
@@ -1923,6 +1927,12 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
 {
     int ret;
     size_t n_size = ( grp->nbits + 7 ) / 8;
+#if defined(MBEDTLS_ECP_DP_X25519_ENABLED)
+    if (grp->id == MBEDTLS_ECP_DP_X25519) {
+
+      return 0;
+    }
+#endif
 
 #if defined(ECP_MONTGOMERY)
     if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )

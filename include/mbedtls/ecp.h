@@ -70,10 +70,11 @@ typedef enum
     MBEDTLS_ECP_DP_BP256R1,        /*!< 256-bits Brainpool curve */
     MBEDTLS_ECP_DP_BP384R1,        /*!< 384-bits Brainpool curve */
     MBEDTLS_ECP_DP_BP512R1,        /*!< 512-bits Brainpool curve */
-    MBEDTLS_ECP_DP_CURVE25519,           /*!< Curve25519               */
+    MBEDTLS_ECP_DP_CURVE25519,     /*!< Curve25519               */
     MBEDTLS_ECP_DP_SECP192K1,      /*!< 192-bits "Koblitz" curve */
     MBEDTLS_ECP_DP_SECP224K1,      /*!< 224-bits "Koblitz" curve */
     MBEDTLS_ECP_DP_SECP256K1,      /*!< 256-bits "Koblitz" curve */
+    MBEDTLS_ECP_DP_X25519,         /*!< Curve25519 (libsodium) */
 } mbedtls_ecp_group_id;
 
 /**
@@ -81,7 +82,7 @@ typedef enum
  *
  * (Montgomery curves excluded for now.)
  */
-#define MBEDTLS_ECP_DP_MAX     12
+#define MBEDTLS_ECP_DP_MAX     13
 
 /**
  * Curve information for use by other modules

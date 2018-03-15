@@ -108,7 +108,10 @@ else()
     set(LIB_INSTALL_DIR lib)
 endif()
 
-include_directories(include/)
+include_directories(
+  include/
+  libsodium/src/libsodium/include/sodium
+)
 
 if(ENABLE_ZLIB_SUPPORT)
     find_package(ZLIB)

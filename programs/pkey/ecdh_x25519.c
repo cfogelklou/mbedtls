@@ -33,12 +33,12 @@
 #endif
 
 #if !defined(MBEDTLS_ECDH_C) || \
-    !defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED) || \
+    !defined(MBEDTLS_ECP_DP_X25519_ENABLED) || \
     !defined(MBEDTLS_ENTROPY_C) || !defined(MBEDTLS_CTR_DRBG_C)
 int main( void )
 {
     mbedtls_printf( "MBEDTLS_ECDH_C and/or "
-                    "MBEDTLS_ECP_DP_CURVE25519_ENABLED and/or "
+                    "MBEDTLS_ECP_DP_X25519_ENABLED and/or "
                     "MBEDTLS_ENTROPY_C and/or MBEDTLS_CTR_DRBG_C "
                     "not defined\n" );
     return( 0 );
@@ -87,7 +87,7 @@ int main( int argc, char *argv[] )
     mbedtls_printf( "  . Setting up client context..." );
     fflush( stdout );
 
-    ret = mbedtls_ecp_group_load( &ctx_cli.grp, MBEDTLS_ECP_DP_CURVE25519 );
+    ret = mbedtls_ecp_group_load( &ctx_cli.grp, MBEDTLS_ECP_DP_X25519 );
     if( ret != 0 )
     {
         mbedtls_printf( " failed\n  ! mbedtls_ecp_group_load returned %d\n", ret );
@@ -117,7 +117,7 @@ int main( int argc, char *argv[] )
     mbedtls_printf( "  . Setting up server context..." );
     fflush( stdout );
 
-    ret = mbedtls_ecp_group_load( &ctx_srv.grp, MBEDTLS_ECP_DP_CURVE25519 );
+    ret = mbedtls_ecp_group_load( &ctx_srv.grp, MBEDTLS_ECP_DP_X25519 );
     if( ret != 0 )
     {
         mbedtls_printf( " failed\n  ! mbedtls_ecp_group_load returned %d\n", ret );
@@ -233,5 +233,5 @@ exit:
 
     return( ret != 0 );
 }
-#endif /* MBEDTLS_ECDH_C && MBEDTLS_ECP_DP_CURVE25519_ENABLED &&
+#endif /* MBEDTLS_ECDH_C && MBEDTLS_ECP_DP_X25519_ENABLED &&
           MBEDTLS_ENTROPY_C && MBEDTLS_CTR_DRBG_C */
