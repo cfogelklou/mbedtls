@@ -205,7 +205,7 @@ int main( int argc, char *argv[] )
     mbedtls_ctr_drbg_init( &ctr_drbg );
     memset( buf, 0, sizeof( buf ) );
 
-    if( argc == 0 )
+    if( argc <= 1 )
     {
     usage:
         ret = 1;
