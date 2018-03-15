@@ -94,7 +94,7 @@ endif(CMAKE_COMPILER_IS_CLANG)
 if(MSVC)
     # Strictest warnings, and treat as errors
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W3")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
+    #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
 endif(MSVC)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
@@ -111,6 +111,7 @@ endif()
 include_directories(
   include/
   libsodium/src/libsodium/include/sodium
+  libsodium_port
 )
 
 if(ENABLE_ZLIB_SUPPORT)

@@ -1868,6 +1868,11 @@ int mbedtls_ecp_check_pubkey( const mbedtls_ecp_group *grp, const mbedtls_ecp_po
     if( mbedtls_mpi_cmp_int( &pt->Z, 1 ) != 0 )
         return( MBEDTLS_ERR_ECP_INVALID_KEY );
 
+#if defined(MBEDTLS_ECP_DP_X25519_ENABLED)
+    if (grp->id == MBEDTLS_ECP_DP_X25519)
+      return(ecp_check_pubkey_mx(grp, pt));
+#endif
+
 #if defined(ECP_MONTGOMERY)
     if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )
         return( ecp_check_pubkey_mx( grp, pt ) );
@@ -1928,9 +1933,32 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
     int ret;
     size_t n_size = ( grp->nbits + 7 ) / 8;
 #if defined(MBEDTLS_ECP_DP_X25519_ENABLED)
-    if (grp->id == MBEDTLS_ECP_DP_X25519) {
+    if (grp->id == MBEDTLS_ECP_DP_X25519) 
+    {
+      size_t b;
+      unsigned char pk[crypto_kx_PUBLICKEYBYTES];
+      unsigned char sk[crypto_kx_SECRETKEYBYTES];
+      unsigned char seed[crypto_kx_SEEDBYTES];
+      f_rng(p_rng, seed, crypto_kx_SEEDBYTES);
+      ret = crypto_kx_seed_keypair(pk, sk, seed);
+      if (0 == ret) 
+      {
+        mbedtls_mpi_read_binary(&Q->X, pk, crypto_kx_PUBLICKEYBYTES);
+        mbedtls_mpi_read_binary(d, sk, crypto_kx_SECRETKEYBYTES);
+      }
 
-      return 0;
+      /* Make sure the most significant bit is nbits */
+      b = mbedtls_mpi_bitlen(d) - 1; /* mbedtls_mpi_bitlen is one-based */
+      if (b > grp->nbits)
+        MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(d, b - grp->nbits));
+      else
+        MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, grp->nbits, 1));
+
+      /* Make sure the last three bits are unset */
+      //MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, 0, 0));
+      //MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, 1, 0));
+      //MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, 2, 0));
+      return ret;
     }
 #endif
 

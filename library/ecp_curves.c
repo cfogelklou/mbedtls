@@ -694,8 +694,7 @@ cleanup:
 */
 static int ecp_use_x25519(mbedtls_ecp_group *grp)
 {
-  grp->nbits = 254;
-  return 0;
+  return ecp_use_curve25519(grp);
 }
 #endif /* MBEDTLS_ECP_DP_CURVE25519_ENABLED */
 

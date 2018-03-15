@@ -2,6 +2,13 @@ option(USE_STATIC_MBEDTLS_LIBRARY "Build mbed TLS static library." ON)
 option(USE_SHARED_MBEDTLS_LIBRARY "Build mbed TLS shared library." OFF)
 option(LINK_WITH_PTHREAD "Explicitly link mbed TLS library to pthread." OFF)
 
+add_definitions(-DSODIUM_STATIC)
+set(TOP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+file (GLOB_RECURSE LIBSODIUM_SRC
+  ${TOP_DIR}/libsodium/src/libsodium/*.c
+)
+
 set(src_crypto
     aes.c
     aesni.c
@@ -56,6 +63,7 @@ set(src_crypto
     version.c
     version_features.c
     xtea.c
+	${LIBSODIUM_SRC}
 )
 
 set(src_x509
