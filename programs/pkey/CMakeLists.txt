@@ -17,6 +17,9 @@ target_link_libraries(ecdh_x25519 mbedtls)
 add_executable(ecdsa ecdsa.c)
 target_link_libraries(ecdsa mbedtls)
 
+add_executable(ecdsa_ed25519 ecdsa_ed25519.c)
+target_link_libraries(ecdsa_ed25519 mbedtls)
+
 add_executable(gen_key gen_key.c)
 target_link_libraries(gen_key mbedtls)
 

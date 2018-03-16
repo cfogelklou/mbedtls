@@ -154,6 +154,10 @@ cleanup:
     return( ret );
 }
 
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+#include "crypto_sign_ed25519.h"
+#endif
+
 #if defined(MBEDTLS_ECDSA_DETERMINISTIC)
 /*
  * Deterministic signature wrapper
@@ -181,6 +185,16 @@ int mbedtls_ecdsa_sign_det( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi 
     MBEDTLS_MPI_CHK( mbedtls_mpi_write_binary( &h, data + grp_len, grp_len ) );
     mbedtls_hmac_drbg_seed_buf( &rng_ctx, md_info, data, 2 * grp_len );
 
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+    if (grp->id == MBEDTLS_ECP_DP_ED25519) {
+      uint8_t sig[crypto_sign_ed25519_BYTES];
+      unsigned long long siglen = crypto_sign_ed25519_BYTES;
+      ret = crypto_sign_ed25519_detached(sig, &siglen, buf, blen, data);
+      mbedtls_mpi_read_binary(r, sig, siglen);
+      mbedtls_mpi_lset(s, 0);
+      goto cleanup;
+    }
+#endif
     ret = mbedtls_ecdsa_sign( grp, r, s, d, buf, blen,
                       mbedtls_hmac_drbg_random, &rng_ctx );
 
@@ -201,6 +215,18 @@ int mbedtls_ecdsa_verify( mbedtls_ecp_group *grp,
                   const mbedtls_ecp_point *Q, const mbedtls_mpi *r, const mbedtls_mpi *s)
 {
     int ret;
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+    if (grp->id == MBEDTLS_ECP_DP_ED25519) {
+      uint8_t sig[crypto_sign_ed25519_BYTES];
+      uint8_t pk[crypto_sign_ed25519_PUBLICKEYBYTES];
+      mbedtls_mpi_write_binary(&Q->X, pk, sizeof pk);
+      mbedtls_mpi_write_binary(r, sig, sizeof sig);
+      ret = crypto_sign_ed25519_verify_detached(sig, buf, blen, pk );
+    }
+    else
+#endif
+    {
     mbedtls_mpi e, s_inv, u1, u2;
     mbedtls_ecp_point R;
 
@@ -274,6 +300,7 @@ int mbedtls_ecdsa_verify( mbedtls_ecp_group *grp,
 cleanup:
     mbedtls_ecp_point_free( &R );
     mbedtls_mpi_free( &e ); mbedtls_mpi_free( &s_inv ); mbedtls_mpi_free( &u1 ); mbedtls_mpi_free( &u2 );
+    }
 
     return( ret );
 }

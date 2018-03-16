@@ -689,14 +689,21 @@ cleanup:
 
 
 #if defined(MBEDTLS_ECP_DP_X25519_ENABLED)
-/*
-* Specialized function for creating the X25519 group (libsodium)
-*/
 static int ecp_use_x25519(mbedtls_ecp_group *grp)
 {
   return ecp_use_curve25519(grp);
 }
-#endif /* MBEDTLS_ECP_DP_CURVE25519_ENABLED */
+#endif /* MBEDTLS_ECP_DP_X25519_ENABLED */
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+static int ecp_use_ed25519(mbedtls_ecp_group *grp)
+{
+  int rval = ecp_use_curve25519(grp);  
+  grp->nbits *= 2;
+  return rval;
+
+}
+#endif /* MBEDTLS_ECP_DP_ED25519_ENABLED */
 
 /*
  * Set a group using well-known domain parameters
@@ -784,6 +791,11 @@ int mbedtls_ecp_group_load( mbedtls_ecp_group *grp, mbedtls_ecp_group_id id )
           return(ecp_use_x25519(grp));
 #endif /* MBEDTLS_ECP_DP_X25519_ENABLED */
 
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+        case MBEDTLS_ECP_DP_ED25519:
+          grp->modp = ecp_mod_p255;
+          return(ecp_use_ed25519(grp));
+#endif /* MBEDTLS_ECP_DP_ED25519_ENABLED */
         default:
             mbedtls_ecp_group_free( grp );
             return( MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE );

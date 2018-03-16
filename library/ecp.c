@@ -472,14 +472,16 @@ int mbedtls_ecp_point_write_binary( const mbedtls_ecp_group *grp, const mbedtls_
 
     if( format == MBEDTLS_ECP_PF_UNCOMPRESSED )
     {
-        *olen = 2 * plen + 1;
+        *olen = (grp->id != MBEDTLS_ECP_DP_ED25519) ? 2 * plen + 1 : plen + 1;
 
         if( buflen < *olen )
             return( MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL );
 
         buf[0] = 0x04;
         MBEDTLS_MPI_CHK( mbedtls_mpi_write_binary( &P->X, buf + 1, plen ) );
-        MBEDTLS_MPI_CHK( mbedtls_mpi_write_binary( &P->Y, buf + 1 + plen, plen ) );
+        if (grp->id != MBEDTLS_ECP_DP_ED25519) {
+            MBEDTLS_MPI_CHK( mbedtls_mpi_write_binary( &P->Y, buf + 1 + plen, plen ) );
+        }
     }
     else if( format == MBEDTLS_ECP_PF_COMPRESSED )
     {
@@ -1921,6 +1923,25 @@ int mbedtls_ecp_check_privkey( const mbedtls_ecp_group *grp, const mbedtls_mpi *
 #include "crypto_kx.h"
 #endif
 
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+#include "crypto_sign_ed25519.h"
+#endif
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED) || defined(MBEDTLS_ECP_DP_X25519_ENABLED)
+
+static void swap(unsigned char *a, unsigned char *b) {
+  unsigned char t = *a; *a = *b; *b = t;
+}
+
+//Reverse bytes in range [first, last)
+static void reverse_bytes(unsigned char *first, unsigned char *last) {
+  while ((first != last) && (first != --last)) {
+    swap(first, last);
+    ++first;
+  }
+}
+#endif /* #if defined(MBEDTLS_ECP_DP_ED25519_ENABLED) || defined(MBEDTLS_ECP_DP_X25519_ENABLED) */
+
 /*
  * Generate a keypair with configurable base point
  */
@@ -1961,6 +1982,57 @@ int mbedtls_ecp_gen_keypair_base( mbedtls_ecp_group *grp,
       return ret;
     }
 #endif
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+    if (grp->id == MBEDTLS_ECP_DP_ED25519)
+    {
+      size_t b;
+      unsigned char pk[crypto_sign_ed25519_PUBLICKEYBYTES];
+      unsigned char sk[crypto_sign_ed25519_SECRETKEYBYTES];
+      unsigned char seed[crypto_sign_ed25519_SEEDBYTES];
+      f_rng(p_rng, seed, crypto_sign_ed25519_SEEDBYTES);
+      ret = crypto_sign_ed25519_seed_keypair(pk, sk, seed);
+      //reverse_bytes(&pk[0], &pk[crypto_sign_ed25519_PUBLICKEYBYTES - 1]);
+      //reverse_bytes(&sk[0], &sk[crypto_sign_ed25519_SECRETKEYBYTES - 1]);
+      if (0 == ret)
+      {
+        mbedtls_mpi_lset(&Q->Z, 1);
+        mbedtls_mpi_read_binary(&Q->X, pk, sizeof pk);
+        mbedtls_mpi_read_binary(d, sk, sizeof sk);
+      }
+
+      /* Make sure the most significant bit is nbits */
+      //b = mbedtls_mpi_bitlen(d) - 1; /* mbedtls_mpi_bitlen is one-based */
+      //if (b > grp->nbits)
+      //  MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(d, b - grp->nbits));
+      //else
+      //  MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, grp->nbits, 1));
+
+      /* Make sure the last three bits are unset */
+      //MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, 0, 0));
+      //MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, 1, 0));
+      //MBEDTLS_MPI_CHK(mbedtls_mpi_set_bit(d, 2, 0));
+
+      {
+        unsigned char pk2[crypto_sign_ed25519_PUBLICKEYBYTES];
+        unsigned char sk2[crypto_sign_ed25519_SECRETKEYBYTES];
+
+        mbedtls_mpi d2;
+        mbedtls_mpi_init(&d2); 
+        mbedtls_mpi_copy(&d2, d);
+
+        mbedtls_mpi_write_binary(&d2, sk2, sizeof sk);
+        mbedtls_mpi_write_binary(&Q->X, pk2, sizeof pk2);
+        MBEDTLS_MPI_CHK(memcmp(pk2, pk, sizeof pk));
+        MBEDTLS_MPI_CHK(memcmp(sk2, sk, sizeof sk));
+
+        mbedtls_mpi_free(&d2);
+      }
+
+      return ret;
+    }
+#endif
+
 
 #if defined(ECP_MONTGOMERY)
     if( ecp_get_type( grp ) == ECP_TYPE_MONTGOMERY )
