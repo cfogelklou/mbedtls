@@ -86,7 +86,7 @@ int mbedtls_ecdsa_sign( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi *s,
     if (0 == ret) {
       unsigned long long siglen = crypto_sign_ed25519_BYTES;
       ret = crypto_sign_ed25519_detached(sig, &siglen, buf, blen, sk);
-      mbedtls_mpi_read_binary(r, sig, siglen);
+      mbedtls_mpi_read_binary(r, sig, (size_t)siglen);
       mbedtls_mpi_lset(s, 0);
     }
     return ret;
@@ -187,6 +187,20 @@ int mbedtls_ecdsa_sign_det( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi 
                     const mbedtls_mpi *d, const unsigned char *buf, size_t blen,
                     mbedtls_md_type_t md_alg )
 {
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+  if (grp->id == MBEDTLS_ECP_DP_ED25519) {
+    uint8_t sig[crypto_sign_ed25519_BYTES];
+    uint8_t sk[crypto_sign_ed25519_SECRETKEYBYTES];
+    mbedtls_mpi_write_binary(d, sk, sizeof sk);
+    unsigned long long siglen = crypto_sign_ed25519_BYTES;
+    int ret = crypto_sign_ed25519_detached(sig, &siglen, buf, blen, sk);
+    mbedtls_mpi_read_binary(r, sig, (size_t)siglen);
+    mbedtls_mpi_lset(s, 0);
+    return ret;
+  }
+#endif
+
     int ret;
     mbedtls_hmac_drbg_context rng_ctx;
     unsigned char data[2 * MBEDTLS_ECP_MAX_BYTES];
@@ -206,16 +220,7 @@ int mbedtls_ecdsa_sign_det( mbedtls_ecp_group *grp, mbedtls_mpi *r, mbedtls_mpi 
     MBEDTLS_MPI_CHK( mbedtls_mpi_write_binary( &h, data + grp_len, grp_len ) );
     mbedtls_hmac_drbg_seed_buf( &rng_ctx, md_info, data, 2 * grp_len );
 
-#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
-    if (grp->id == MBEDTLS_ECP_DP_ED25519) {
-      uint8_t sig[crypto_sign_ed25519_BYTES];
-      unsigned long long siglen = crypto_sign_ed25519_BYTES;
-      ret = crypto_sign_ed25519_detached(sig, &siglen, buf, blen, data);
-      mbedtls_mpi_read_binary(r, sig, siglen);
-      mbedtls_mpi_lset(s, 0);
-      goto cleanup;
-    }
-#endif
+
     ret = mbedtls_ecdsa_sign( grp, r, s, d, buf, blen,
                       mbedtls_hmac_drbg_random, &rng_ctx );
 
@@ -350,6 +355,32 @@ static int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
     return( 0 );
 }
 
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+#include "crypto_sign_ed25519.h"
+/*
+* Convert a signature (given by context) to ASN.1
+*/
+static int ecdsa_ed25519_signature_to_asn1(const mbedtls_mpi *r,
+  unsigned char *sig, size_t *slen)
+{
+  int ret;
+  unsigned char buf[crypto_sign_ed25519_BYTES+5];
+  unsigned char *p = buf + sizeof(buf);
+  size_t len = 0;
+  
+  MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_mpi(&p, buf, r));
+
+  MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&p, buf, len));
+  MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(&p, buf,
+    MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE));
+
+  memcpy(sig, p, len);
+  *slen = len;
+
+  return(0);
+}
+#endif
+
 /*
  * Compute and write signature
  */
@@ -377,8 +408,12 @@ int mbedtls_ecdsa_write_signature( mbedtls_ecdsa_context *ctx, mbedtls_md_type_t
     MBEDTLS_MPI_CHK( mbedtls_ecdsa_sign( &ctx->grp, &r, &s, &ctx->d,
                          hash, hlen, f_rng, p_rng ) );
 #endif
-
-    MBEDTLS_MPI_CHK( ecdsa_signature_to_asn1( &r, &s, sig, slen ) );
+    if (ctx->grp.id != MBEDTLS_ECP_DP_ED25519) {
+      MBEDTLS_MPI_CHK(ecdsa_signature_to_asn1(&r, &s, sig, slen));
+    }
+    else {
+      MBEDTLS_MPI_CHK(ecdsa_ed25519_signature_to_asn1(&r, sig, slen));
+    }
 
 cleanup:
     mbedtls_mpi_free( &r );
