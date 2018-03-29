@@ -400,15 +400,95 @@ static const oid_sig_alg_t oid_sig_alg[] =
         MBEDTLS_MD_NONE,     MBEDTLS_PK_RSASSA_PSS,
     },
 #endif /* MBEDTLS_RSA_C */
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+    {
+        { ADD_LEN(MBEDTLS_OID_ED25519),        "ed25519",           "ed25519" },
+         MBEDTLS_MD_NONE,     MBEDTLS_PK_ECKEY,
+    },
+#endif
+
     {
         { NULL, 0, NULL, NULL },
         MBEDTLS_MD_NONE, MBEDTLS_PK_NONE,
     },
 };
 
+
+
+#if 0
 FN_OID_TYPED_FROM_ASN1(oid_sig_alg_t, sig_alg, oid_sig_alg)
 FN_OID_GET_DESCRIPTOR_ATTR1(mbedtls_oid_get_sig_alg_desc, oid_sig_alg_t, sig_alg, const char *, description)
 FN_OID_GET_ATTR2(mbedtls_oid_get_sig_alg, oid_sig_alg_t, sig_alg, mbedtls_md_type_t, md_alg, mbedtls_pk_type_t, pk_alg)
+#else
+/* FN_OID_GET_ATTR2(
+  FN_NAME =mbedtls_oid_get_sig_alg, 
+  TYPE_T = oid_sig_alg_t, 
+  TYPE_NAME = sig_alg, 
+  ATTR1_TYPE = mbedtls_md_type_t, 
+  ATTR1 = md_alg, 
+  ATTR2_TYPE = mbedtls_pk_type_t, 
+  ATTR2 = pk_alg)
+#define FN_OID_GET_ATTR2(FN_NAME, TYPE_T, TYPE_NAME, ATTR1_TYPE, ATTR1, ATTR2_TYPE, ATTR2)
+*/
+
+/*
+FN_OID_TYPED_FROM_ASN1(oid_sig_alg_t, sig_alg, oid_sig_alg)
+#define FN_OID_TYPED_FROM_ASN1( 
+  TYPE_T = oid_sig_alg_t, 
+  NAME = sig_alg, 
+  LIST = oid_sig_alg)
+*/
+
+static const oid_sig_alg_t * oid_sig_alg_from_asn1( const mbedtls_asn1_buf *oid )
+{
+    const oid_sig_alg_t *p = oid_sig_alg;
+    const mbedtls_oid_descriptor_t *cur = (const mbedtls_oid_descriptor_t *) p;
+    if( p == NULL || oid == NULL ) return( NULL );
+    while( cur->asn1 != NULL ) {
+        if( cur->asn1_len == oid->len &&
+            memcmp( cur->asn1, oid->p, oid->len ) == 0 ) {
+            return( p );
+        }
+        p++;
+        cur = (const mbedtls_oid_descriptor_t *) p;
+    }
+    return( NULL );
+}
+
+
+/*FN_OID_GET_DESCRIPTOR_ATTR1(
+  mbedtls_oid_get_sig_alg_desc, 
+  oid_sig_alg_t, 
+  sig_alg, 
+  const char *, description)
+#define FN_OID_GET_DESCRIPTOR_ATTR1(
+  FN_NAME = mbedtls_oid_get_sig_alg_desc, 
+  TYPE_T = oid_sig_alg_t, 
+  TYPE_NAME = sig_alg, 
+  ATTR1_TYPE = const char *, 
+  ATTR1 = description)
+*/
+int mbedtls_oid_get_sig_alg_desc( const mbedtls_asn1_buf *oid, const char ** ATTR1 )                  \
+{
+    const oid_sig_alg_t *data = oid_sig_alg_from_asn1( oid );
+    if( data == NULL ) return( MBEDTLS_ERR_OID_NOT_FOUND );
+    *ATTR1 = data->descriptor.description;
+    return( 0 );
+}
+
+int mbedtls_oid_get_sig_alg(
+  const mbedtls_asn1_buf *oid, 
+  mbedtls_md_type_t * md_alg, 
+  mbedtls_pk_type_t * pk_alg)
+{
+  const oid_sig_alg_t *data = oid_sig_alg_from_asn1(oid);
+    if( data == NULL ) return( MBEDTLS_ERR_OID_NOT_FOUND );
+    *md_alg = data->md_alg;
+    *pk_alg = data->pk_alg;
+    return( 0 );
+}
+#endif
 FN_OID_GET_OID_BY_ATTR2(mbedtls_oid_get_oid_by_sig_alg, oid_sig_alg_t, oid_sig_alg, mbedtls_pk_type_t, pk_alg, mbedtls_md_type_t, md_alg)
 #endif /* MBEDTLS_MD_C */
 
@@ -434,13 +514,44 @@ static const oid_pk_alg_t oid_pk_alg[] =
         { ADD_LEN( MBEDTLS_OID_EC_ALG_ECDH ),          "id-ecDH",          "EC key for ECDH" },
         MBEDTLS_PK_ECKEY_DH,
     },
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+    {
+      { ADD_LEN(MBEDTLS_OID_ED25519_PK_ALG),  "id-ed25519",   "ED25519 EC key" },
+      MBEDTLS_PK_ECKEY,
+    },
+#endif
     {
         { NULL, 0, NULL, NULL },
         MBEDTLS_PK_NONE,
     },
 };
 
+#if 0
 FN_OID_TYPED_FROM_ASN1(oid_pk_alg_t, pk_alg, oid_pk_alg)
+#else
+/*
+#define FN_OID_TYPED_FROM_ASN1( 
+  TYPE_T = oid_pk_alg_t, 
+  NAME = pk_alg, 
+  LIST = oid_pk_alg )
+*/
+static const oid_pk_alg_t * oid_pk_alg_from_asn1( const mbedtls_asn1_buf *oid )
+{
+    const oid_pk_alg_t *p = oid_pk_alg;
+    const mbedtls_oid_descriptor_t *cur = (const mbedtls_oid_descriptor_t *) p;
+    if( p == NULL || oid == NULL ) return( NULL );
+    while( cur->asn1 != NULL ) {
+        if( cur->asn1_len == oid->len &&
+            memcmp( cur->asn1, oid->p, oid->len ) == 0 ) {
+            return( p );
+        }
+        p++;
+        cur = (const mbedtls_oid_descriptor_t *) p;
+    }
+    return( NULL );
+}
+
+#endif
 FN_OID_GET_ATTR1(mbedtls_oid_get_pk_alg, oid_pk_alg_t, pk_alg, mbedtls_pk_type_t, pk_alg)
 FN_OID_GET_OID_BY_ATTR1(mbedtls_oid_get_oid_by_pk_alg, oid_pk_alg_t, oid_pk_alg, mbedtls_pk_type_t, pk_alg)
 

@@ -372,6 +372,19 @@
  *   ecdsa-with-SHA2(3) 4 } */
 #define MBEDTLS_OID_ECDSA_SHA512            MBEDTLS_OID_ANSI_X9_62_SIG_SHA2 "\x04"
 
+
+#if defined(MBEDTLS_ECP_DP_ED25519_ENABLED)
+/*
+1.3.101.112curveEd25519(EdDSA 25519 signature algorithm)
+id-X25519    OBJECT IDENTIFIER ::= { 1 3 101 110 }
+id-X448      OBJECT IDENTIFIER ::= { 1 3 101 111 }
+id-Ed25519   OBJECT IDENTIFIER ::= { 1 3 101 112 }
+id-Ed448     OBJECT IDENTIFIER ::= { 1 3 101 113 }
+*/
+#define MBEDTLS_OID_ED25519 "\x2b\x65\x70"
+#define MBEDTLS_OID_ED25519_PK_ALG "\x2b\x65\x6e"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

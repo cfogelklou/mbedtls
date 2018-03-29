@@ -429,10 +429,33 @@ static int test_ref_keys(void) {
     return ret;
 }
 
+#include "mbedtls/x509_crt.h"
+#include <stdarg.h>
+#include <string.h>
+void test_cert(void){
+  const char cert[] = "-----BEGIN CERTIFICATE-----\r\n"
+    "MIIBLDCB36ADAgECAghWAUdKKo3DMDAFBgMrZXAwGTEXMBUGA1UEAwwOSUVURiBUZX\r\n"
+    "N0IERlbW8wHhcNMTYwODAxMTIxOTI0WhcNNDAxMjMxMjM1OTU5WjAZMRcwFQYDVQQD\r\n"
+    "DA5JRVRGIFRlc3QgRGVtbzAqMAUGAytlbgMhAIUg8AmJMKdUdIt93LQ+91oNvzoNJj\r\n"
+    "ga9OukqY6qm05qo0UwQzAPBgNVHRMBAf8EBTADAQEAMA4GA1UdDwEBAAQEAwIDCDAg\r\n"
+    "BgNVHQ4BAQAEFgQUmx9e7e0EM4Xk97xiPFl1uQvIuzswBQYDK2VwA0EAryMB/t3J5v\r\n"
+    "/BzKc9dNZIpDmAgs3babFOTQbs+BolzlDUwsPrdGxO3YNGhW7Ibz3OGhhlxXrCe1Cg\r\n"
+    "w1AH9efZBw==\r\n"
+    "-----END CERTIFICATE-----\r\n";
+  mbedtls_x509_crt crt;
+  mbedtls_x509_crt_init(&crt);
+  const int rval = mbedtls_x509_crt_parse(&crt, cert, sizeof(cert) );
+  if (0 == rval) {
+    const int rval = mbedtls_x509_crt_info(cert, sizeof(cert), NULL, &crt);
+  }
+
+  mbedtls_x509_crt_free(&crt);
+}
+
 
 int main( int argc, char *argv[] )
 {
-
+    test_cert();
     test_ref_keys();
 
     int ret;
