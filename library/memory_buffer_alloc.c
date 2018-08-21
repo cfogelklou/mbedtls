@@ -65,6 +65,10 @@ struct _memory_header
     char            **trace;
     size_t          trace_count;
 #endif
+#if defined(MBEDTLS_MEMORY_FILETRACE)
+    const char *    file;
+    int             line;
+#endif
     size_t          magic2;
 };
 
@@ -229,7 +233,11 @@ static int verify_chain()
     return( 0 );
 }
 
-static void *buffer_alloc_calloc( size_t n, size_t size )
+#ifdef MBEDTLS_MEMORY_FILETRACE
+static void *buffer_alloc_calloc( size_t n, size_t size, const char * const pF, const int line )
+#else
+static void *buffer_alloc_calloc(size_t n, size_t size)
+#endif
 {
     memory_header *new, *cur = heap.first_free;
     unsigned char *p;
@@ -310,7 +318,10 @@ static void *buffer_alloc_calloc( size_t n, size_t size )
         cur->trace = backtrace_symbols( trace_buffer, trace_cnt );
         cur->trace_count = trace_cnt;
 #endif
-
+#if defined(MBEDTLS_MEMORY_FILETRACE)
+        cur->file = pF;
+        cur->line = line;
+#endif
         if( ( heap.verify & MBEDTLS_MEMORY_VERIFY_ALLOC ) && verify_chain() != 0 )
             mbedtls_exit( 1 );
 
@@ -330,6 +341,10 @@ static void *buffer_alloc_calloc( size_t n, size_t size )
 #if defined(MBEDTLS_MEMORY_BACKTRACE)
     new->trace = NULL;
     new->trace_count = 0;
+#endif
+#if defined(MBEDTLS_MEMORY_FILETRACE)
+    cur->file = NULL;
+    cur->line = -1;
 #endif
     new->magic1 = MAGIC1;
     new->magic2 = MAGIC2;
@@ -369,6 +384,10 @@ static void *buffer_alloc_calloc( size_t n, size_t size )
     cur->trace_count = trace_cnt;
 #endif
 
+#if defined(MBEDTLS_MEMORY_FILETRACE)
+    cur->file = pF;
+    cur->line = line;
+#endif
     if( ( heap.verify & MBEDTLS_MEMORY_VERIFY_ALLOC ) && verify_chain() != 0 )
         mbedtls_exit( 1 );
 
@@ -546,12 +565,16 @@ void mbedtls_memory_buffer_alloc_cur_get( size_t *cur_used, size_t *cur_blocks )
 #endif /* MBEDTLS_MEMORY_DEBUG */
 
 #if defined(MBEDTLS_THREADING_C)
-static void *buffer_alloc_calloc_mutexed( size_t n, size_t size )
+#ifdef MBEDTLS_MEMORY_FILETRACE
+static void *buffer_alloc_calloc_mutexed( size_t n, size_t size, const char * const pF, const int line )
+#else
+static void *buffer_alloc_calloc_mutexed(size_t n, size_t size)
+#endif
 {
     void *buf;
     if( mbedtls_mutex_lock( &heap.mutex ) != 0 )
         return( NULL );
-    buf = buffer_alloc_calloc( n, size );
+    buf = buffer_alloc_calloc( n, size, pF, line );
     if( mbedtls_mutex_unlock( &heap.mutex ) )
         return( NULL );
     return( buf );
