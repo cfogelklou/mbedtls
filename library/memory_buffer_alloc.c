@@ -574,7 +574,11 @@ static void *buffer_alloc_calloc_mutexed(size_t n, size_t size)
     void *buf;
     if( mbedtls_mutex_lock( &heap.mutex ) != 0 )
         return( NULL );
-    buf = buffer_alloc_calloc( n, size, pF, line );
+    buf = buffer_alloc_calloc(n, size
+#ifdef MBEDTLS_MEMORY_FILETRACE
+    , pF, line
+#endif
+    );
     if( mbedtls_mutex_unlock( &heap.mutex ) )
         return( NULL );
     return( buf );
