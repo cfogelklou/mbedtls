@@ -58,7 +58,7 @@ static void *mbedtls_dbg_calloc(size_t n, size_t size, const char * const pF, co
   return MBEDTLS_PLATFORM_STD_CALLOC(n, size);
 }
 
-void * (*_mbedtls_calloc)(size_t, size_t, const char * const, const int) = MBEDTLS_PLATFORM_STD_CALLOC;
+void * (*_mbedtls_calloc)(size_t, size_t, const char * const, const int) = mbedtls_dbg_calloc;
 #else
 void * (*mbedtls_calloc)(size_t, size_t) = MBEDTLS_PLATFORM_STD_CALLOC;
 #endif
