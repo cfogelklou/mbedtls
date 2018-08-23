@@ -115,6 +115,12 @@ static void debug_header( memory_header *hdr )
         mbedtls_fprintf( stderr, "%s\n", hdr->trace[i] );
     mbedtls_fprintf( stderr, "\n" );
 #endif
+
+#if defined(MBEDTLS_MEMORY_FILETRACE)
+    if ((hdr->alloc) && (hdr->file)) {
+      mbedtls_fprintf(stderr, "FILE:  %s(%10zu)\n", hdr->file, (size_t)hdr->line);
+    }
+#endif
 }
 
 static void debug_chain()
