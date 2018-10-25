@@ -175,6 +175,27 @@ int mbedtls_x509_crt_parse_der( mbedtls_x509_crt *chain, const unsigned char *bu
                         size_t buflen );
 
 /**
+* \brief          Parse a single DER formatted certificate and add it
+*                 to the chained list.  Also return a pointer to the extension memory.
+*
+* \param chain    points to the start of the chain
+* \param buf      buffer holding the certificate DER data
+* \param buflen   size of the buffer
+* \param oids     (optional out) array of char * to receive extension pointers.
+* \param values   (optional out) array of lengths to receive the lengths of each extension
+* \param maxExtsPtr (optional in & out) Set it to the lengths of the oids and values arrays. It will be 
+*                 changed to reflect the actual number of found extensions.
+*
+* \return         0 if successful, or a specific X509 or PEM error code
+*/
+int mbedtls_x509_crt_parse_der_get_extension(mbedtls_x509_crt *chain, const unsigned char *buf,
+  size_t buflen, 
+  mbedtls_asn1_buf oids[],
+  mbedtls_asn1_buf values[],
+  size_t *max_extensions
+);
+
+/**
  * \brief          Parse one or more certificates and add them
  *                 to the chained list. Parses permissively. If some
  *                 certificates can be parsed, the result is the number

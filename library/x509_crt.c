@@ -546,11 +546,18 @@ static int x509_get_subject_alt_name( unsigned char **p,
  */
 static int x509_get_crt_ext( unsigned char **p,
                              const unsigned char *end,
-                             mbedtls_x509_crt *crt )
+                             mbedtls_x509_crt *crt,
+                             mbedtls_asn1_buf oids[],
+                             mbedtls_asn1_buf values[],
+                             size_t *max_extensions
+  )
 {
     int ret;
     size_t len;
     unsigned char *end_ext_data, *end_ext_octet;
+    size_t maxExts = (max_extensions) ? *max_extensions : 0;
+    size_t extIdx = ((oids) && (values)) ? 0 : maxExts;
+    maxExts = ((oids) && (values)) ? maxExts : 0;
 
     if( ( ret = mbedtls_x509_get_ext( p, end, &crt->v3_ext, 3 ) ) != 0 )
     {
@@ -559,7 +566,7 @@ static int x509_get_crt_ext( unsigned char **p,
 
         return( ret );
     }
-
+    
     while( *p < end )
     {
         /*
@@ -598,6 +605,14 @@ static int x509_get_crt_ext( unsigned char **p,
             return( MBEDTLS_ERR_X509_INVALID_EXTENSIONS + ret );
 
         end_ext_octet = *p + len;
+
+        if (extIdx < maxExts) {
+          memcpy(&oids[extIdx], &extn_oid, sizeof(extn_oid));
+          values[extIdx].p = *p;
+          values[extIdx].len = len;
+          values[extIdx].tag = MBEDTLS_ASN1_OCTET_STRING;
+          extIdx++;
+        }
 
         if( end_ext_octet != end_ext_data )
             return( MBEDTLS_ERR_X509_INVALID_EXTENSIONS +
@@ -676,6 +691,10 @@ static int x509_get_crt_ext( unsigned char **p,
         return( MBEDTLS_ERR_X509_INVALID_EXTENSIONS +
                 MBEDTLS_ERR_ASN1_LENGTH_MISMATCH );
 
+    if (max_extensions) {
+      *max_extensions = extIdx;
+    }
+
     return( 0 );
 }
 
@@ -683,7 +702,11 @@ static int x509_get_crt_ext( unsigned char **p,
  * Parse and fill a single X.509 certificate in DER format
  */
 static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *buf,
-                                    size_t buflen )
+                                    size_t buflen, 
+                                    mbedtls_asn1_buf oids[],
+                                    mbedtls_asn1_buf values[],
+                                    size_t *max_extensions
+)
 {
     int ret;
     size_t len;
@@ -879,7 +902,7 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
     if( crt->version == 3 )
 #endif
     {
-        ret = x509_get_crt_ext( &p, end, crt );
+        ret = x509_get_crt_ext( &p, end, crt, oids, values, max_extensions );
         if( ret != 0 )
         {
             mbedtls_x509_crt_free( crt );
@@ -937,10 +960,14 @@ static int x509_crt_parse_der_core( mbedtls_x509_crt *crt, const unsigned char *
 
 /*
  * Parse one X.509 certificate in DER format from a buffer and add them to a
- * chained list
+ * chained list, and get the extension
  */
-int mbedtls_x509_crt_parse_der( mbedtls_x509_crt *chain, const unsigned char *buf,
-                        size_t buflen )
+int mbedtls_x509_crt_parse_der_get_extension( mbedtls_x509_crt *chain, const unsigned char *buf,
+                        size_t buflen,
+                        mbedtls_asn1_buf oids[],
+                        mbedtls_asn1_buf values[],
+                        size_t *max_extensions
+)
 {
     int ret;
     mbedtls_x509_crt *crt = chain, *prev = NULL;
@@ -972,7 +999,8 @@ int mbedtls_x509_crt_parse_der( mbedtls_x509_crt *chain, const unsigned char *bu
         crt = crt->next;
     }
 
-    if( ( ret = x509_crt_parse_der_core( crt, buf, buflen ) ) != 0 )
+    if( ( ret = x509_crt_parse_der_core( crt, buf, buflen, 
+                     oids, values, max_extensions ) ) != 0 )
     {
         if( prev )
             prev->next = NULL;
@@ -984,6 +1012,15 @@ int mbedtls_x509_crt_parse_der( mbedtls_x509_crt *chain, const unsigned char *bu
     }
 
     return( 0 );
+}
+
+/*
+* Parse one X.509 certificate in DER format from a buffer and add them to a
+* chained list
+*/
+int mbedtls_x509_crt_parse_der(mbedtls_x509_crt *chain, const unsigned char *buf,
+  size_t buflen) {
+  return mbedtls_x509_crt_parse_der_get_extension(chain, buf, buflen, NULL, NULL, NULL);
 }
 
 /*
