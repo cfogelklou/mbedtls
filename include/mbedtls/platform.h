@@ -121,7 +121,12 @@ extern "C" {
 #else
 /* For size_t */
 #include <stddef.h>
+#ifdef MBEDTLS_MEMORY_FILETRACE
+extern void *_mbedtls_calloc( size_t n, size_t size, const char * const pFile, const int line );
+#define mbedtls_calloc(n,sz) _mbedtls_calloc(n, sz, __FILE__, __LINE__)
+#else
 extern void *mbedtls_calloc( size_t n, size_t size );
+#endif
 extern void mbedtls_free( void *ptr );
 
 /**
@@ -133,8 +138,14 @@ extern void mbedtls_free( void *ptr );
  *
  * \return              \c 0.
  */
-int mbedtls_platform_set_calloc_free( void * (*calloc_func)( size_t, size_t ),
-                              void (*free_func)( void * ) );
+int mbedtls_platform_set_calloc_free( 
+#ifdef MBEDTLS_MEMORY_FILETRACE
+  void * (*calloc_func)(size_t, size_t, const char * const, const int ),
+#else
+  void * (*calloc_func)( size_t, size_t ),
+#endif
+  void (*free_func)( void * ) 
+);
 #endif /* MBEDTLS_PLATFORM_FREE_MACRO && MBEDTLS_PLATFORM_CALLOC_MACRO */
 #else /* !MBEDTLS_PLATFORM_MEMORY */
 #define mbedtls_free       free

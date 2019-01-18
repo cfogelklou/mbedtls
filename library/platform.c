@@ -51,13 +51,23 @@ static void platform_free_uninit( void *ptr )
 #define MBEDTLS_PLATFORM_STD_FREE     platform_free_uninit
 #endif /* !MBEDTLS_PLATFORM_STD_FREE */
 
-static void * (*mbedtls_calloc_func)( size_t, size_t ) = MBEDTLS_PLATFORM_STD_CALLOC;
 static void (*mbedtls_free_func)( void * ) = MBEDTLS_PLATFORM_STD_FREE;
 
+#ifdef MBEDTLS_MEMORY_FILETRACE
+static void * (*mbedtls_calloc_func)(size_t, size_t, const char *, int ) = MBEDTLS_PLATFORM_STD_CALLOC;
+void * _mbedtls_calloc(size_t nmemb, size_t size, const char *pf, int line)
+{
+  return (*mbedtls_calloc_func)(nmemb, size, pf, line);
+}
+#else
+static void * (*mbedtls_calloc_func)(size_t, size_t) = MBEDTLS_PLATFORM_STD_CALLOC;
 void * mbedtls_calloc( size_t nmemb, size_t size )
 {
+    (void)pf;
+    (void)line;
     return (*mbedtls_calloc_func)( nmemb, size );
 }
+#endif
 
 void mbedtls_free( void * ptr )
 {
