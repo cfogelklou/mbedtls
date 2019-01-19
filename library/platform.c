@@ -63,8 +63,6 @@ void * _mbedtls_calloc(size_t nmemb, size_t size, const char *pf, int line)
 static void * (*mbedtls_calloc_func)(size_t, size_t) = MBEDTLS_PLATFORM_STD_CALLOC;
 void * mbedtls_calloc( size_t nmemb, size_t size )
 {
-    (void)pf;
-    (void)line;
     return (*mbedtls_calloc_func)( nmemb, size );
 }
 #endif
