@@ -376,6 +376,8 @@
 
 #else /* __MACH__ && __APPLE__ */
 
+#ifndef __VLE__
+
 #define MULADDC_INIT                        \
     asm(                                    \
         "lwz    %%r3, %3            \n\t"   \
@@ -407,6 +409,39 @@
         : "m" (s), "m" (d), "m" (c), "m" (b)        \
         : "r3", "r4", "r5", "r6", "r7", "r8", "r9"  \
     );
+#else // #ifndef __VLE__
+#define MULADDC_INIT                        \
+    asm(                                    \
+        "e_lwz    %%r3, %3            \n\t"   \
+        "e_lwz    %%r4, %4            \n\t"   \
+        "e_lwz    %%r5, %5            \n\t"   \
+        "e_lwz    %%r6, %6            \n\t"   \
+        "e_addi   %%r3, %%r3, -4      \n\t"   \
+        "e_addi   %%r4, %%r4, -4      \n\t"   \
+        "e_addic  %%r5, %%r5,  0      \n\t"
+
+#define MULADDC_CORE                        \
+        "e_lwzu   %%r7, 4(%%r3)       \n\t"   \
+        "mullw  %%r8, %%r7, %%r6    \n\t"   \
+        "mulhwu %%r9, %%r7, %%r6    \n\t"   \
+        "adde   %%r8, %%r8, %%r5    \n\t"   \
+        "e_lwz    %%r7, 4(%%r4)       \n\t"   \
+        "addze  %%r5, %%r9          \n\t"   \
+        "addc   %%r8, %%r8, %%r7    \n\t"   \
+        "e_stwu   %%r8, 4(%%r4)       \n\t"
+
+#define MULADDC_STOP                        \
+        "addze  %%r5, %%r5          \n\t"   \
+        "e_addi   %%r4, %%r4, 4       \n\t"   \
+        "e_addi   %%r3, %%r3, 4       \n\t"   \
+        "e_stw    %%r5, %0            \n\t"   \
+        "e_stw    %%r4, %1            \n\t"   \
+        "e_stw    %%r3, %2            \n\t"   \
+        : "=m" (c), "=m" (d), "=m" (s)              \
+        : "m" (s), "m" (d), "m" (c), "m" (b)        \
+        : "r3", "r4", "r5", "r6", "r7", "r8", "r9"  \
+    );
+#endif // #ifndef __VLE__
 
 #endif /* __MACH__ && __APPLE__ */
 
