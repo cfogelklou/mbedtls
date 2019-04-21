@@ -64,6 +64,7 @@ struct _memory_header
 #if defined(MBEDTLS_MEMORY_FILETRACE)
     const char *    file;
     int             line;
+    size_t          alloc_count;
 #endif
     size_t          magic2;
 };
@@ -114,7 +115,7 @@ static void debug_header( memory_header *hdr )
 
 #if defined(MBEDTLS_MEMORY_FILETRACE)
     if ((hdr->alloc) && (hdr->file)) {
-      mbedtls_fprintf(stderr, "FILE:  %s(%10zu)\n", hdr->file, (size_t)hdr->line);
+      mbedtls_fprintf(stderr, "ALLOC_CNT: %10zu, FILE:  %s(%10zu)\n", hdr->alloc_count, hdr->file, (size_t)hdr->line);
     }
 #endif
 }
@@ -327,6 +328,7 @@ static void *buffer_alloc_calloc(size_t n, size_t size)
 #if defined(MBEDTLS_MEMORY_FILETRACE)
         cur->file = pF;
         cur->line = line;
+        cur->alloc_count = heap.alloc_count;
 #endif
         if( ( heap.verify & MBEDTLS_MEMORY_VERIFY_ALLOC ) && verify_chain() != 0 )
             mbedtls_exit( 1 );
@@ -351,6 +353,7 @@ static void *buffer_alloc_calloc(size_t n, size_t size)
 #if defined(MBEDTLS_MEMORY_FILETRACE)
     cur->file = NULL;
     cur->line = -1;
+    cur->alloc_count = 0;
 #endif
     new->magic1 = MAGIC1;
     new->magic2 = MAGIC2;
@@ -393,6 +396,7 @@ static void *buffer_alloc_calloc(size_t n, size_t size)
 #if defined(MBEDTLS_MEMORY_FILETRACE)
     cur->file = pF;
     cur->line = line;
+    cur->alloc_count = heap.alloc_count;
 #endif
     if( ( heap.verify & MBEDTLS_MEMORY_VERIFY_ALLOC ) && verify_chain() != 0 )
         mbedtls_exit( 1 );
@@ -533,6 +537,9 @@ int mbedtls_memory_buffer_alloc_verify( void )
 #if defined(MBEDTLS_MEMORY_DEBUG)
 void mbedtls_memory_buffer_alloc_status( void )
 {
+    if( mbedtls_mutex_lock( &heap.mutex ) )
+      return;
+  
     mbedtls_fprintf( stderr,
                       "Current use: %zu blocks / %zu bytes, max: %zu blocks / "
                       "%zu bytes (total %zu bytes), alloc / free: %zu / %zu\n",
@@ -541,6 +548,8 @@ void mbedtls_memory_buffer_alloc_status( void )
                       heap.maximum_header_count * sizeof( memory_header )
                       + heap.maximum_used,
                       heap.alloc_count, heap.free_count );
+
+    (void) mbedtls_mutex_unlock( &heap.mutex );
 
     if( heap.first->next == NULL )
     {
