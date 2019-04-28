@@ -98,14 +98,14 @@ static void debug_header( memory_header *hdr )
 #if defined(MBEDTLS_MEMORY_BACKTRACE)
     size_t i;
 #endif
-
+#if 0
     mbedtls_fprintf( stderr, "HDR:  PTR(%10zu), PREV(%10zu), NEXT(%10zu), "
                               "ALLOC(%zu), SIZE(%10zu)\n",
                       (size_t) hdr, (size_t) hdr->prev, (size_t) hdr->next,
                       hdr->alloc, hdr->size );
     mbedtls_fprintf( stderr, "      FPREV(%10zu), FNEXT(%10zu)\n",
                       (size_t) hdr->prev_free, (size_t) hdr->next_free );
-
+#endif
 #if defined(MBEDTLS_MEMORY_BACKTRACE)
     mbedtls_fprintf( stderr, "TRACE: \n" );
     for( i = 0; i < hdr->trace_count; i++ )
@@ -115,7 +115,8 @@ static void debug_header( memory_header *hdr )
 
 #if defined(MBEDTLS_MEMORY_FILETRACE)
     if ((hdr->alloc) && (hdr->file)) {
-      mbedtls_fprintf(stderr, "ALLOC_CNT: %10zu, FILE:  %s(%10zu)\n", hdr->alloc_count, hdr->file, (size_t)hdr->line);
+      mbedtls_fprintf(stderr, "%10zu, %10zu, FILE:  %s(%10zu)\n", hdr->alloc_count, hdr->size, hdr->file, (size_t)hdr->line);
+      OSALSleep(20);
     }
 #endif
 }
